@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام التحليل الشامل - V16 (الذكاء الرقمي)</title>
+    <title>نظام التحليل الشامل - V17 (العنوان الاختياري)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,6 +20,8 @@
             --accent-color: #2980b9;
             --bg-color: #f4f6f8;
             --border-color: #ddd;
+            --custom-title-bg: #fff8e1; /* لون خلفية العنوان الاختياري */
+            --custom-title-text: #795548;
         }
         
         body {
@@ -109,7 +111,7 @@
             border-radius: 20px;
         }
 
-        /* --- حاوية التقرير (على الشاشة) --- */
+        /* --- حاوية التقرير --- */
         .page-container {
             width: 210mm;
             min-height: 297mm;
@@ -155,7 +157,7 @@
             border: 1px solid #d1f2eb;
             padding: 10px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -163,7 +165,21 @@
             font-size: 13px;
         }
 
-        /* 3. الجدول */
+        /* 3. العنوان الفرعي (الاختياري) */
+        .custom-title-bar {
+            background-color: var(--custom-title-bg);
+            color: var(--custom-title-text);
+            border: 1px solid #ffe0b2;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            display: none; /* مخفي افتراضياً */
+        }
+
+        /* 4. الجدول */
         .table-section { margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #bbb; padding: 5px; text-align: center; }
@@ -172,7 +188,7 @@
         .col-separator { border-left: 2px solid #555 !important; }
         tr:nth-child(even) { background-color: #fafafa; }
 
-        /* 4. الرسم البياني */
+        /* 5. الرسم البياني */
         .chart-section {
             flex-grow: 1;
             border: 1px solid #eee;
@@ -191,7 +207,7 @@
             justify-content: center;
         }
 
-        /* 5. التذييل (على الشاشة) */
+        /* 6. التذييل (على الشاشة) */
         .report-footer {
             margin-top: auto; 
             padding-top: 20px;
@@ -230,7 +246,8 @@
             }
 
             .header-section { margin-bottom: 10px; padding-bottom: 5px; }
-            .info-bar { margin-bottom: 15px; padding: 5px; }
+            .info-bar { margin-bottom: 10px; padding: 5px; }
+            .custom-title-bar { margin-bottom: 15px; padding: 5px; border: 1px solid #ddd; background-color: #fff8e1 !important; -webkit-print-color-adjust: exact; }
             .table-section { margin-bottom: 20px; }
             table { font-size: 10px; }
             th, td { padding: 4px; }
@@ -293,6 +310,11 @@
         </div>
     </div>
 
+    <div style="margin-top: 15px; padding: 15px; background: #fffde7; border: 1px solid #eee; border-radius: 8px;">
+        <label style="font-weight: bold; font-size: 13px; color: #f39c12;">عنوان فرعي للتقرير (اختياري): </label>
+        <input type="text" id="inp_custom_title" class="input-field" style="width: 70%; display: inline-block; margin-right: 10px;" placeholder="مثال: تحليل اختبار الفترة الأولى / اختبار تشخيصي..." oninput="updateReportDisplay()">
+    </div>
+
     <div style="margin-top: 15px; padding: 15px; background: #fdfefe; border: 1px solid #eee; border-radius: 8px;">
         <label style="font-weight: bold; font-size: 13px;">توقيع المعلم/ـة: </label>
         <input type="text" id="inp_teacher" class="input-field" style="width: 50%; display: inline-block; margin-right: 10px;" placeholder="اكتب الاسم هنا..." oninput="updateReportDisplay()">
@@ -337,6 +359,8 @@
         <div class="info-item"><span>🏫 الفصل / الشعبة:</span> <span id="out_section">--</span></div>
         <div class="info-item"><span>👥 عدد الطلاب:</span> <span id="totalStudents">0</span></div>
     </div>
+
+    <div id="out_custom_title_bar" class="custom-title-bar"></div>
 
     <div class="table-section">
         <table id="combinedTable">
@@ -392,7 +416,7 @@
     let globalCounts = {};
     let globalTotalStudents = 0;
     let globalSubjects = [];
-    let currentWorkbook = null; // للاحتفاظ بالملف لإعادة المعالجة
+    let currentWorkbook = null;
     const gradesOrder = ["ضعيف", "مقبول", "جيد", "جيد جداً", "ممتاز"];
 
     window.onload = function() {
@@ -413,6 +437,17 @@
         document.getElementById('out_grade').innerText = document.getElementById('inp_grade').value;
         document.getElementById('out_section').innerText = document.getElementById('inp_section').value;
         
+        // العنوان الاختياري
+        const customTitleVal = document.getElementById('inp_custom_title').value;
+        const customTitleBar = document.getElementById('out_custom_title_bar');
+        
+        if(customTitleVal && customTitleVal.trim() !== "") {
+            customTitleBar.innerText = customTitleVal;
+            customTitleBar.style.display = 'block';
+        } else {
+            customTitleBar.style.display = 'none';
+        }
+
         const teacherVal = document.getElementById('inp_teacher').value;
         document.getElementById('out_teacher').innerText = teacherVal ? teacherVal : ".......................";
     }
@@ -479,7 +514,6 @@
         document.getElementById('inp_section').value = "1";
     }
 
-    // === الدالة الهجينة الذكية (Smart Detection) ===
     function processDataHybrid(workbook) {
         globalCounts = {};
         globalTotalStudents = 0;
@@ -491,22 +525,18 @@
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
         
-        // كلمات البحث عن عمود الدرجات (أولوية 1)
         const scoreKeywords = ["المجموع", "رصد الدرجات", "الدرجة الكلية", "الدرجة", "Total", "Score", "Mark"];
 
-        // مسح لتحديد النوع
         for(let r=0; r < Math.min(json.length, 40); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let cellVal = (json[r][c] || "").toString().trim();
                 
-                // 1. هل هو ملف تقديرات؟
                 if(gradesOrder.includes(cellVal)) {
                     fileType = "grades_text";
                     break;
                 }
                 
-                // 2. هل هو ملف درجات (بحث بالكلمات)؟
                 if(scoreKeywords.some(keyword => cellVal.includes(keyword) || cellVal === keyword)) {
                     fileType = "scores_numeric";
                     scoreColumnIndex = c;
@@ -515,25 +545,22 @@
             if(fileType === "grades_text") break;
         }
 
-        // 3. الذكاء الرقمي (Heuristic) - إذا لم نجد اسم، نبحث عن الأرقام
         if(fileType === "unknown" || (fileType === "scores_numeric" && scoreColumnIndex === -1)) {
-            // البحث عن العمود الذي يحتوي على أكبر قيم رقمية (بافتراض أنه المجموع)
             let maxScoreFound = 0;
             let bestColIndex = -1;
 
-            for(let c=0; c < 50; c++) { // فحص أول 50 عمود
+            for(let c=0; c < 50; c++) { 
                 let numericCount = 0;
                 let currentMax = 0;
-                for(let r=5; r < Math.min(json.length, 100); r++) { // تخطي الترويسة
+                for(let r=5; r < Math.min(json.length, 100); r++) { 
                     if(json[r] && !isNaN(parseFloat(json[r][c]))) {
                         let val = parseFloat(json[r][c]);
-                        if(val > 0 && val <= 1000) { // نطاق درجات معقول
+                        if(val > 0 && val <= 1000) { 
                             numericCount++;
                             if(val > currentMax) currentMax = val;
                         }
                     }
                 }
-                // الشرط: عمود فيه أرقام كثيرة، وقيمته العظمى هي الأكبر بين الأعمدة
                 if(numericCount > 5 && currentMax > maxScoreFound) {
                     maxScoreFound = currentMax;
                     bestColIndex = c;
@@ -543,17 +570,14 @@
             if(bestColIndex !== -1) {
                 fileType = "scores_numeric";
                 scoreColumnIndex = bestColIndex;
-                console.log("تم اكتشاف عمود الدرجات ذكياً: العمود رقم " + bestColIndex);
             }
         }
 
-        // تنفيذ المعالجة حسب النوع المكتشف
         if (fileType === "grades_text") {
             processTextGrades(workbook);
         } else if (fileType === "scores_numeric" && scoreColumnIndex !== -1) {
             processNumericScores(workbook, scoreColumnIndex);
         } else {
-            // محاولة يائسة أخيرة: الوضع النصي الافتراضي
             processTextGrades(workbook); 
         }
 
@@ -563,7 +587,7 @@
             renderCombinedTable();
             renderChartSmart();
         } else {
-            alert("لم يتم العثور على بيانات واضحة. تأكد من أن الملف يحتوي على درجات أو تقديرات.");
+            alert("لم يتم العثور على بيانات واضحة.");
         }
     }
 
@@ -628,12 +652,11 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
         
-        // محاولة استخراج اسم المادة
         for(let r=0; r < Math.min(json.length, 30); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let txt = (json[r][c] || "").toString();
-                if(txt.includes("المادة") || txt.includes("مادة")) { } // يمكن تحسينها لاحقاً لأخذ القيمة المجاورة
+                if(txt.includes("المادة") || txt.includes("مادة")) { } 
                 if(["اللغة الإنجليزية", "الرياضيات", "لغتي", "علوم", "فقه", "توحيد"].some(s => txt.includes(s))) {
                     subjectName = txt;
                 }
@@ -644,23 +667,20 @@
         updateSubjectInput();
         globalCounts[subjectName] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
 
-        // الحصول على الدرجة العظمى من المستخدم
         let maxScoreInput = parseFloat(document.getElementById('inp_max_score').value) || 100;
 
         workbook.SheetNames.forEach(sheetName => {
             const sheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
             
-            // نبدأ العد من الصفوف التي تحتوي أرقاماً في العمود المحدد
             for(let r=0; r < json.length; r++) {
                 if(!json[r]) continue;
                 let cellVal = json[r][scoreColIdx];
                 
-                // تخطي الترويسات (إذا كانت القيمة نصاً وليست رقماً)
                 if(typeof cellVal === 'string' && isNaN(parseFloat(cellVal))) continue;
 
                 let score = parseFloat(cellVal);
-                if(!isNaN(score) && score >= 0 && score <= maxScoreInput * 1.5) { // شرط أمان
+                if(!isNaN(score) && score >= 0 && score <= maxScoreInput * 1.5) { 
                     let grade = getGradeFromScore(score, maxScoreInput);
                     globalCounts[subjectName][grade]++;
                     globalTotalStudents++; 
