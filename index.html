@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام التحليل الشامل (النسخة الجوكر V15)</title>
+    <title>نظام تحليل النتائج الشامل</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,7 +99,18 @@
         .btn-excel { background-color: #27ae60; }
         .btn-img { background-color: #8e44ad; }
 
-        /* --- حاوية التقرير --- */
+        /* نص التلميح الجديد */
+        .hint-text {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 8px;
+            background-color: #f0f3f4;
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        /* --- حاوية التقرير (على الشاشة) --- */
         .page-container {
             width: 210mm;
             min-height: 297mm;
@@ -126,7 +137,7 @@
         .header-col { flex: 1; }
         .header-right { text-align: center; }
         .header-center { text-align: center; }
-        .header-left { text-align: center; } /* توسيط */
+        .header-left { text-align: center; } 
 
         .header-text { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
         .report-title { 
@@ -225,7 +236,11 @@
             table { font-size: 10px; }
             th, td { padding: 4px; }
 
-            .chart-section { padding: 0; border: none; margin-bottom: 60px; }
+            .chart-section { 
+                padding: 0; 
+                border: none; 
+                margin-bottom: 60px;
+            }
             .chart-container { height: 260px !important; }
 
             .report-footer {
@@ -245,8 +260,8 @@
 
 <div class="control-panel">
     <div class="control-header">
-        <h2>🛠️ إعدادات الترويسة والبيانات</h2>
-        <p style="color: #666; font-size: 12px;">نظام ذكي مزدوج: يقبل ملفات "إشعار الدرجات" (تقديرات) وملفات "كشف الرصد" (أرقام) تلقائياً.</p>
+        <h2>📊 نظام تحليل النتائج الشامل</h2>
+        <p style="color: #666; font-size: 12px;">أداة ذكية لتحليل درجات الطلاب واستخراج التقارير بضغطة زر.</p>
     </div>
 
     <div class="control-grid">
@@ -285,6 +300,9 @@
     <div class="main-actions">
         <input type="file" id="fileUpload" accept=".xlsx, .xls" style="display: none;" onchange="handleFile(this)">
         <button class="btn btn-upload" onclick="document.getElementById('fileUpload').click()">📂 1. رفع ملف الإكسل</button>
+        <br>
+        <span class="hint-text">💡 يدعم: "إشعار الدرجات" (تقديرات لفظية) و "كشف الرصد" (درجات رقمية) تلقائياً</span>
+        <br><br>
         <button class="btn btn-print" onclick="window.print()">🖨️ 2. طباعة التقرير</button>
         <button class="btn btn-excel" onclick="exportToExcel()">📥 تصدير إكسل</button>
         <button class="btn btn-img" onclick="downloadChartImage()">🖼️ حفظ الرسم</button>
@@ -414,7 +432,7 @@
             const workbook = XLSX.read(data, {type: 'array'});
             
             autoFillInputs(workbook);
-            processDataHybrid(workbook); // استخدام الدالة الهجينة الجديدة
+            processDataHybrid(workbook); 
             updateReportDisplay();
         };
         reader.readAsArrayBuffer(file);
@@ -452,57 +470,42 @@
         document.getElementById('inp_section').value = "1";
     }
 
-    // === الدالة الهجينة (الجوكر) ===
     function processDataHybrid(workbook) {
         globalCounts = {};
         globalTotalStudents = 0;
         globalSubjects = [];
 
-        // 1. الفحص: هل الملف "تقديرات" (شامل) أم "أرقام" (مادة واحدة)؟
         let fileType = "unknown";
         let scoreColumnIndex = -1;
-        let gradeColumnIndex = -1;
         
-        // مسح سريع لأول ورقة لتحديد النوع
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
         
-        // البحث عن مؤشرات
         for(let r=0; r < Math.min(json.length, 30); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let cellVal = (json[r][c] || "").toString().trim();
-                
-                // مؤشر ملف التقديرات (يحتوي على "ممتاز", "جيد جداً"...)
                 if(gradesOrder.includes(cellVal)) {
                     fileType = "grades_text";
-                    gradeColumnIndex = c;
                     break;
                 }
-                
-                // مؤشر ملف الرصد (يحتوي على "المجموع")
                 if(cellVal === "المجموع") {
                     fileType = "scores_numeric";
                     scoreColumnIndex = c;
                 }
             }
-            if(fileType === "grades_text") break; // الأولوية للتقديرات إذا وجدت
+            if(fileType === "grades_text") break;
         }
 
-        // إذا وجدنا "المجموع" لكن لم نجد "تقديرات"، نعتمد الأرقام
         if(fileType === "unknown" && scoreColumnIndex !== -1) {
             fileType = "scores_numeric";
         }
 
-        // --- التنفيذ حسب النوع ---
         if (fileType === "grades_text") {
-            // استدعاء منطق V14 (تقديرات)
             processTextGrades(workbook);
         } else if (fileType === "scores_numeric") {
-            // استدعاء المنطق الجديد (أرقام)
             processNumericScores(workbook, scoreColumnIndex);
         } else {
-            // محاولة أخيرة: البحث عن العمود 23 (افتراضي للنسخ القديمة)
             processTextGrades(workbook); 
         }
 
@@ -512,13 +515,11 @@
             renderCombinedTable();
             renderChartSmart();
         } else {
-            alert("لم يتم العثور على بيانات واضحة (تقديرات أو درجات المجموع).");
+            alert("لم يتم العثور على بيانات واضحة.");
         }
     }
 
-    // معالجة ملفات التقديرات (مثل V14)
     function processTextGrades(workbook) {
-        // استكشاف المواد
         let detectedSubjects = [];
         const gradeCol = 23; 
         const subjectColAr = 46; 
@@ -574,9 +575,7 @@
         });
     }
 
-    // معالجة ملفات الأرقام (الجديد V15)
     function processNumericScores(workbook, scoreColIdx) {
-        // محاولة إيجاد اسم المادة من الترويسة
         let subjectName = "المادة";
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
@@ -585,56 +584,38 @@
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let txt = (json[r][c] || "").toString();
-                if(txt.includes("المادة") || txt.includes("مادة")) {
-                    // غالباً اسم المادة في الخلية التالية أو نفس الخلية
-                    // سنحاول البحث عن كلمات عربية لاحقاً، حالياً سنعتمد "المادة"
-                    // في ملفك 222.xlsx اسم المادة موجود في سطر مستقل
-                }
-                // في ملف 222.xlsx، المادة "اللغة الإنجليزية" موجودة في الخلية A19
+                if(txt.includes("المادة") || txt.includes("مادة")) { }
                 if(txt === "اللغة الإنجليزية" || txt === "الرياضيات" || txt === "لغتي" || txt === "علوم") {
                     subjectName = txt;
                 }
             }
         }
         
-        // إذا لم نجد اسم المادة بدقة، نعتمد "المادة الحالية"
         globalSubjects = [subjectName];
         updateSubjectInput();
         globalCounts[subjectName] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
 
-        // عد الدرجات
         workbook.SheetNames.forEach(sheetName => {
             const sheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
             
-            // نبدأ البحث من بعد سطر العنوان "المجموع"
             let startCounting = false;
             for(let r=0; r < json.length; r++) {
                 if(!json[r]) continue;
-                
                 let cellVal = (json[r][scoreColIdx] || "").toString().trim();
-                
-                if(cellVal === "المجموع") {
-                    startCounting = true;
-                    continue;
-                }
-                
+                if(cellVal === "المجموع") { startCounting = true; continue; }
                 if(startCounting) {
                     let score = parseFloat(cellVal);
                     if(!isNaN(score) && score <= 100 && score >= 0) {
-                        // تحويل الرقم إلى تقدير
                         let grade = getGradeFromScore(score);
                         globalCounts[subjectName][grade]++;
-                        globalTotalStudents++; // هنا نعد الطلاب بناءً على الدرجات
+                        globalTotalStudents++; 
                     }
                 }
             }
         });
-        
-        // في ملفات الرصد، كل صف هو طالب، لذا globalTotalStudents سيكون دقيقاً
     }
 
-    // دالة تحويل الدرجة الرقمية إلى تقدير (نظام نور)
     function getGradeFromScore(score) {
         if (score >= 90) return "ممتاز";
         if (score >= 80) return "جيد جداً";
