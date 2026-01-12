@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام تحليل النتائج الشامل</title>
+    <title>نظام التحليل الشامل - V16 (الذكاء الرقمي)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,7 +99,6 @@
         .btn-excel { background-color: #27ae60; }
         .btn-img { background-color: #8e44ad; }
 
-        /* نص التلميح الجديد */
         .hint-text {
             font-size: 11px;
             color: #7f8c8d;
@@ -261,7 +260,7 @@
 <div class="control-panel">
     <div class="control-header">
         <h2>📊 نظام تحليل النتائج الشامل</h2>
-        <p style="color: #666; font-size: 12px;">أداة ذكية لتحليل درجات الطلاب واستخراج التقارير بضغطة زر.</p>
+        <p style="color: #666; font-size: 12px;">أداة ذكية تتعرف على الأعمدة وتدعم جميع أنواع الملفات.</p>
     </div>
 
     <div class="control-grid">
@@ -286,9 +285,11 @@
         </div>
 
         <div class="control-group">
-            <h3>الصف والفصل</h3>
+            <h3>الإعدادات والصف</h3>
             <input type="text" id="inp_grade" class="input-field" placeholder="الصف" oninput="updateReportDisplay()">
             <input type="text" id="inp_section" class="input-field" placeholder="الفصل" oninput="updateReportDisplay()">
+            <label style="font-size: 11px; font-weight:bold; display:block; margin-top:5px;">الدرجة العظمى (للمواد):</label>
+            <input type="number" id="inp_max_score" class="input-field" value="100" placeholder="100" onchange="reProcessFile()">
         </div>
     </div>
 
@@ -301,7 +302,7 @@
         <input type="file" id="fileUpload" accept=".xlsx, .xls" style="display: none;" onchange="handleFile(this)">
         <button class="btn btn-upload" onclick="document.getElementById('fileUpload').click()">📂 1. رفع ملف الإكسل</button>
         <br>
-        <span class="hint-text">💡 يدعم: "إشعار الدرجات" (تقديرات لفظية) و "كشف الرصد" (درجات رقمية) تلقائياً</span>
+        <span class="hint-text">💡 يتعرف تلقائياً على أعمدة (المجموع، رصد الدرجات، الدرجة الكلية)</span>
         <br><br>
         <button class="btn btn-print" onclick="window.print()">🖨️ 2. طباعة التقرير</button>
         <button class="btn btn-excel" onclick="exportToExcel()">📥 تصدير إكسل</button>
@@ -391,6 +392,7 @@
     let globalCounts = {};
     let globalTotalStudents = 0;
     let globalSubjects = [];
+    let currentWorkbook = null; // للاحتفاظ بالملف لإعادة المعالجة
     const gradesOrder = ["ضعيف", "مقبول", "جيد", "جيد جداً", "ممتاز"];
 
     window.onload = function() {
@@ -430,12 +432,19 @@
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
+            currentWorkbook = workbook;
             
             autoFillInputs(workbook);
             processDataHybrid(workbook); 
             updateReportDisplay();
         };
         reader.readAsArrayBuffer(file);
+    }
+
+    function reProcessFile() {
+        if(currentWorkbook) {
+            processDataHybrid(currentWorkbook);
+        }
     }
 
     function autoFillInputs(workbook) {
@@ -470,6 +479,7 @@
         document.getElementById('inp_section').value = "1";
     }
 
+    // === الدالة الهجينة الذكية (Smart Detection) ===
     function processDataHybrid(workbook) {
         globalCounts = {};
         globalTotalStudents = 0;
@@ -481,15 +491,23 @@
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
         
-        for(let r=0; r < Math.min(json.length, 30); r++) {
+        // كلمات البحث عن عمود الدرجات (أولوية 1)
+        const scoreKeywords = ["المجموع", "رصد الدرجات", "الدرجة الكلية", "الدرجة", "Total", "Score", "Mark"];
+
+        // مسح لتحديد النوع
+        for(let r=0; r < Math.min(json.length, 40); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let cellVal = (json[r][c] || "").toString().trim();
+                
+                // 1. هل هو ملف تقديرات؟
                 if(gradesOrder.includes(cellVal)) {
                     fileType = "grades_text";
                     break;
                 }
-                if(cellVal === "المجموع") {
+                
+                // 2. هل هو ملف درجات (بحث بالكلمات)؟
+                if(scoreKeywords.some(keyword => cellVal.includes(keyword) || cellVal === keyword)) {
                     fileType = "scores_numeric";
                     scoreColumnIndex = c;
                 }
@@ -497,15 +515,45 @@
             if(fileType === "grades_text") break;
         }
 
-        if(fileType === "unknown" && scoreColumnIndex !== -1) {
-            fileType = "scores_numeric";
+        // 3. الذكاء الرقمي (Heuristic) - إذا لم نجد اسم، نبحث عن الأرقام
+        if(fileType === "unknown" || (fileType === "scores_numeric" && scoreColumnIndex === -1)) {
+            // البحث عن العمود الذي يحتوي على أكبر قيم رقمية (بافتراض أنه المجموع)
+            let maxScoreFound = 0;
+            let bestColIndex = -1;
+
+            for(let c=0; c < 50; c++) { // فحص أول 50 عمود
+                let numericCount = 0;
+                let currentMax = 0;
+                for(let r=5; r < Math.min(json.length, 100); r++) { // تخطي الترويسة
+                    if(json[r] && !isNaN(parseFloat(json[r][c]))) {
+                        let val = parseFloat(json[r][c]);
+                        if(val > 0 && val <= 1000) { // نطاق درجات معقول
+                            numericCount++;
+                            if(val > currentMax) currentMax = val;
+                        }
+                    }
+                }
+                // الشرط: عمود فيه أرقام كثيرة، وقيمته العظمى هي الأكبر بين الأعمدة
+                if(numericCount > 5 && currentMax > maxScoreFound) {
+                    maxScoreFound = currentMax;
+                    bestColIndex = c;
+                }
+            }
+
+            if(bestColIndex !== -1) {
+                fileType = "scores_numeric";
+                scoreColumnIndex = bestColIndex;
+                console.log("تم اكتشاف عمود الدرجات ذكياً: العمود رقم " + bestColIndex);
+            }
         }
 
+        // تنفيذ المعالجة حسب النوع المكتشف
         if (fileType === "grades_text") {
             processTextGrades(workbook);
-        } else if (fileType === "scores_numeric") {
+        } else if (fileType === "scores_numeric" && scoreColumnIndex !== -1) {
             processNumericScores(workbook, scoreColumnIndex);
         } else {
+            // محاولة يائسة أخيرة: الوضع النصي الافتراضي
             processTextGrades(workbook); 
         }
 
@@ -515,7 +563,7 @@
             renderCombinedTable();
             renderChartSmart();
         } else {
-            alert("لم يتم العثور على بيانات واضحة.");
+            alert("لم يتم العثور على بيانات واضحة. تأكد من أن الملف يحتوي على درجات أو تقديرات.");
         }
     }
 
@@ -580,12 +628,13 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
         
-        for(let r=0; r < Math.min(json.length, 25); r++) {
+        // محاولة استخراج اسم المادة
+        for(let r=0; r < Math.min(json.length, 30); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let txt = (json[r][c] || "").toString();
-                if(txt.includes("المادة") || txt.includes("مادة")) { }
-                if(txt === "اللغة الإنجليزية" || txt === "الرياضيات" || txt === "لغتي" || txt === "علوم") {
+                if(txt.includes("المادة") || txt.includes("مادة")) { } // يمكن تحسينها لاحقاً لأخذ القيمة المجاورة
+                if(["اللغة الإنجليزية", "الرياضيات", "لغتي", "علوم", "فقه", "توحيد"].some(s => txt.includes(s))) {
                     subjectName = txt;
                 }
             }
@@ -595,32 +644,37 @@
         updateSubjectInput();
         globalCounts[subjectName] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
 
+        // الحصول على الدرجة العظمى من المستخدم
+        let maxScoreInput = parseFloat(document.getElementById('inp_max_score').value) || 100;
+
         workbook.SheetNames.forEach(sheetName => {
             const sheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
             
-            let startCounting = false;
+            // نبدأ العد من الصفوف التي تحتوي أرقاماً في العمود المحدد
             for(let r=0; r < json.length; r++) {
                 if(!json[r]) continue;
-                let cellVal = (json[r][scoreColIdx] || "").toString().trim();
-                if(cellVal === "المجموع") { startCounting = true; continue; }
-                if(startCounting) {
-                    let score = parseFloat(cellVal);
-                    if(!isNaN(score) && score <= 100 && score >= 0) {
-                        let grade = getGradeFromScore(score);
-                        globalCounts[subjectName][grade]++;
-                        globalTotalStudents++; 
-                    }
+                let cellVal = json[r][scoreColIdx];
+                
+                // تخطي الترويسات (إذا كانت القيمة نصاً وليست رقماً)
+                if(typeof cellVal === 'string' && isNaN(parseFloat(cellVal))) continue;
+
+                let score = parseFloat(cellVal);
+                if(!isNaN(score) && score >= 0 && score <= maxScoreInput * 1.5) { // شرط أمان
+                    let grade = getGradeFromScore(score, maxScoreInput);
+                    globalCounts[subjectName][grade]++;
+                    globalTotalStudents++; 
                 }
             }
         });
     }
 
-    function getGradeFromScore(score) {
-        if (score >= 90) return "ممتاز";
-        if (score >= 80) return "جيد جداً";
-        if (score >= 65) return "جيد";
-        if (score >= 50) return "مقبول";
+    function getGradeFromScore(score, maxScore) {
+        let percent = (score / maxScore) * 100;
+        if (percent >= 90) return "ممتاز";
+        if (percent >= 80) return "جيد جداً";
+        if (percent >= 65) return "جيد";
+        if (percent >= 50) return "مقبول";
         return "ضعيف";
     }
 
