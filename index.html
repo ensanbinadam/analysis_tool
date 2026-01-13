@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام التحليل الشامل - V18 (دمج الملفات المتعددة)</title>
+    <title>نظام التحليل الشامل - V19 (حفظ الإعدادات)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,7 +42,35 @@
             max-width: 1000px;
             margin: 0 auto 30px auto;
             border: 1px solid #3498db;
+            position: relative;
         }
+        
+        /* شريط أدوات الحفظ في الأعلى */
+        .settings-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .btn-small {
+            padding: 5px 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Cairo';
+            transition: all 0.2s;
+        }
+        .btn-small:hover { background: #e2e6ea; }
+        .btn-save { color: #27ae60; border-color: #27ae60; }
+        .btn-save:hover { background: #27ae60; color: #fff; }
+        .btn-clear { color: #c0392b; border-color: #c0392b; }
+        .btn-clear:hover { background: #c0392b; color: #fff; }
+
         .control-header {
             text-align: center;
             margin-bottom: 20px;
@@ -221,41 +249,22 @@
         }
         .footer-credits a { color: #2980b9; text-decoration: none; margin: 0 5px; }
 
-        /* ================= إعدادات الطباعة ================= */
         @media print {
             @page { size: A4; margin: 0; }
             body { background: none; padding: 0; margin: 0; }
             .control-panel { display: none !important; }
             .footer-credits { display: none !important; }
-
-            .page-container { 
-                width: 210mm;
-                padding: 5mm 10mm; 
-                margin: 0 auto;
-                border: none;
-                box-shadow: none;
-                height: 297mm;
-                display: block;
-            }
-
+            .page-container { width: 210mm; padding: 5mm 10mm; margin: 0 auto; border: none; box-shadow: none; height: 297mm; display: block; }
             .header-section { margin-bottom: 10px; padding-bottom: 5px; }
             .info-bar { margin-bottom: 10px; padding: 5px; }
             .custom-title-bar { margin-bottom: 15px; padding: 5px; border: 1px solid #ddd; background-color: #fff8e1 !important; -webkit-print-color-adjust: exact; }
             .table-section { margin-bottom: 20px; }
             table { font-size: 10px; }
             th, td { padding: 4px; }
-
             .chart-section { padding: 0; border: none; margin-bottom: 60px; }
             .chart-container { height: 260px !important; }
-
-            .report-footer {
-                margin-top: 20px;
-                padding-top: 10px;
-                border-top: 1px solid #ccc;
-                page-break-inside: avoid;
-            }
+            .report-footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc; page-break-inside: avoid; }
             .teacher-signature { margin-bottom: 30px; font-size: 14px; padding-top: 10px; }
-
             .info-bar { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background-color: #e8f6f3 !important; }
             .main-header th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background-color: #2c3e50 !important; color: #fff !important; }
         }
@@ -264,9 +273,14 @@
 <body>
 
 <div class="control-panel">
+    <div class="settings-toolbar">
+        <button class="btn-small btn-save" onclick="saveSettings()">💾 حفظ البيانات الحالية</button>
+        <button class="btn-small btn-clear" onclick="clearSettings()">🧹 مسح البيانات</button>
+    </div>
+
     <div class="control-header">
-        <h2>📊 نظام تحليل النتائج الشامل (دمج متعدد)</h2>
-        <p style="color: #666; font-size: 12px;">يمكنك تحديد عدة ملفات معاً، وسيقوم النظام بدمجها في تقرير واحد.</p>
+        <h2>📊 نظام تحليل النتائج الشامل (V19)</h2>
+        <p style="color: #666; font-size: 12px;">يدعم الدمج، الذكاء الرقمي، وحفظ إعداداتك لاستخدامها لاحقاً.</p>
     </div>
 
     <div class="control-grid">
@@ -301,7 +315,7 @@
 
     <div style="margin-top: 15px; padding: 15px; background: #fffde7; border: 1px solid #eee; border-radius: 8px;">
         <label style="font-weight: bold; font-size: 13px; color: #f39c12;">عنوان فرعي للتقرير (اختياري): </label>
-        <input type="text" id="inp_custom_title" class="input-field" style="width: 70%; display: inline-block; margin-right: 10px;" placeholder="مثال: تحليل مجمع للفصول (أ، ب، ج) / تحليل شامل لجميع المواد..." oninput="updateReportDisplay()">
+        <input type="text" id="inp_custom_title" class="input-field" style="width: 70%; display: inline-block; margin-right: 10px;" placeholder="مثال: تحليل مجمع للفصول / تحليل شامل لجميع المواد..." oninput="updateReportDisplay()">
     </div>
 
     <div style="margin-top: 15px; padding: 15px; background: #fdfefe; border: 1px solid #eee; border-radius: 8px;">
@@ -313,7 +327,7 @@
         <input type="file" id="fileUpload" accept=".xlsx, .xls" style="display: none;" multiple onchange="handleFiles(this)">
         <button class="btn btn-upload" onclick="document.getElementById('fileUpload').click()">📂 1. رفع ملفات الإكسل (متعدد)</button>
         <br>
-        <span class="hint-text">💡 يمكنك تحديد أكثر من ملف (باستخدام Ctrl أو Shift) لدمج التحليل</span>
+        <span class="hint-text">💡 استخدم 💾 لحفظ بيانات الترويسة واستخدامها في المرة القادمة تلقائياً</span>
         <br><br>
         <button class="btn btn-print" onclick="window.print()">🖨️ 2. طباعة التقرير</button>
         <button class="btn btn-excel" onclick="exportToExcel()">📥 تصدير إكسل</button>
@@ -404,13 +418,70 @@
 <script>
     let globalCounts = {};
     let globalTotalStudents = 0;
-    let globalSubjects = []; // Set of all subjects found across all files
-    let loadedWorkbooks = []; // Store all loaded workbooks for reprocessing
+    let globalSubjects = [];
+    let loadedWorkbooks = [];
     const gradesOrder = ["ضعيف", "مقبول", "جيد", "جيد جداً", "ممتاز"];
 
+    // === دوال الحفظ والاسترجاع (جديد) ===
     window.onload = function() {
+        loadSettings(); // استرجاع البيانات عند الفتح
         updateReportDisplay();
     };
+
+    function saveSettings() {
+        try {
+            const settings = {
+                right1: document.getElementById('inp_right1').value,
+                right2: document.getElementById('inp_right2').value,
+                right3: document.getElementById('inp_right3').value,
+                school: document.getElementById('inp_school').value,
+                year: document.getElementById('inp_year').value,
+                term: document.getElementById('inp_term').value,
+                subject: document.getElementById('inp_subject').value,
+                grade: document.getElementById('inp_grade').value,
+                section: document.getElementById('inp_section').value,
+                maxScore: document.getElementById('inp_max_score').value,
+                customTitle: document.getElementById('inp_custom_title').value,
+                teacher: document.getElementById('inp_teacher').value
+            };
+            localStorage.setItem('analysisToolSettings', JSON.stringify(settings));
+            alert('✅ تم حفظ البيانات بنجاح!\nسيتم تحميلها تلقائياً عند فتح الصفحة لاحقاً.');
+        } catch (e) {
+            alert('حدث خطأ أثناء الحفظ. تأكد من إعدادات المتصفح.');
+        }
+    }
+
+    function loadSettings() {
+        try {
+            const saved = localStorage.getItem('analysisToolSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                document.getElementById('inp_right1').value = settings.right1 || "المملكة العربية السعودية";
+                document.getElementById('inp_right2').value = settings.right2 || "وزارة التعليم";
+                document.getElementById('inp_right3').value = settings.right3 || "إدارة التعليم بمنطقة الرياض";
+                if(settings.school) document.getElementById('inp_school').value = settings.school;
+                if(settings.year) document.getElementById('inp_year').value = settings.year;
+                if(settings.term) document.getElementById('inp_term').value = settings.term;
+                if(settings.subject) document.getElementById('inp_subject').value = settings.subject;
+                if(settings.grade) document.getElementById('inp_grade').value = settings.grade;
+                if(settings.section) document.getElementById('inp_section').value = settings.section;
+                if(settings.maxScore) document.getElementById('inp_max_score').value = settings.maxScore;
+                if(settings.customTitle) document.getElementById('inp_custom_title').value = settings.customTitle;
+                if(settings.teacher) document.getElementById('inp_teacher').value = settings.teacher;
+            }
+        } catch (e) {
+            console.log('No valid settings found');
+        }
+    }
+
+    function clearSettings() {
+        if(confirm('هل أنت متأكد من مسح جميع البيانات المدخلة وإعادتها للافتراضي؟')) {
+            localStorage.removeItem('analysisToolSettings');
+            location.reload(); // إعادة تحميل الصفحة لتفريغ الحقول
+        }
+    }
+
+    // ==========================================
 
     function updateReportDisplay() {
         document.getElementById('out_right1').innerText = document.getElementById('inp_right1').value;
@@ -447,29 +518,27 @@
         return str.replace(/[0-9]/g, d => map[d]);
     }
 
-    // --- معالجة الملفات المتعددة ---
     async function handleFiles(input) {
         const files = input.files;
         if (files.length === 0) return;
 
-        // إعادة تعيين المتغيرات العامة لبدء تحليل جديد
         globalCounts = {};
         globalTotalStudents = 0;
         globalSubjects = [];
         loadedWorkbooks = [];
 
-        // قراءة كل الملفات
         const promises = Array.from(files).map(file => readFileAsync(file));
         const workbooks = await Promise.all(promises);
         
-        loadedWorkbooks = workbooks; // حفظ الملفات لإعادة المعالجة
+        loadedWorkbooks = workbooks; 
 
-        // استخراج البيانات الوصفية من أول ملف فقط
-        if (workbooks.length > 0) {
-            autoFillInputs(workbooks[0]);
+        // إذا لم يكن هناك بيانات محفوظة، حاول استخراجها من أول ملف
+        // وإلا احتفظ بالبيانات التي أدخلها المستخدم أو استرجعها من الحفظ
+        const hasSavedSettings = localStorage.getItem('analysisToolSettings');
+        if (workbooks.length > 0 && !hasSavedSettings) {
+             autoFillInputs(workbooks[0]);
         }
 
-        // معالجة البيانات من جميع الملفات ودمجها
         processAllWorkbooks(workbooks);
     }
 
@@ -488,7 +557,6 @@
 
     function reProcessFiles() {
         if(loadedWorkbooks.length > 0) {
-            // إعادة تعيين العدادات فقط، البيانات الوصفية تبقى كما عدلها المستخدم
             globalCounts = {};
             globalTotalStudents = 0;
             globalSubjects = [];
@@ -501,9 +569,8 @@
             processDataHybridAccumulative(wb);
         });
 
-        // التحديث النهائي للعرض
         document.getElementById('totalStudents').innerText = toArabicNumerals(globalTotalStudents);
-        updateSubjectInput(); // تحديث حقل المادة بناءً على المواد المجمعة
+        updateSubjectInput(); 
         
         if (globalTotalStudents > 0) {
             renderCombinedTable();
@@ -536,10 +603,8 @@
         
         if (foundSchool) document.getElementById('inp_school').value = foundSchool;
         if (foundGrade) document.getElementById('inp_grade').value = foundGrade;
-        // افتراضياً نضع "فصول متعددة" إذا لم يغيره المستخدم، لكن سنبقيه فارغاً أو 1 ليعدله المستخدم
     }
 
-    // === دالة المعالجة التراكمية (Accumulative) ===
     function processDataHybridAccumulative(workbook) {
         let fileType = "unknown";
         let scoreColumnIndex = -1;
@@ -548,7 +613,6 @@
         const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
         const scoreKeywords = ["المجموع", "رصد الدرجات", "الدرجة الكلية", "الدرجة", "Total", "Score", "Mark"];
 
-        // 1. تحديد نوع الملف
         for(let r=0; r < Math.min(json.length, 40); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
@@ -565,7 +629,6 @@
             if(fileType === "grades_text") break;
         }
 
-        // 2. الذكاء الرقمي
         if(fileType === "unknown" || (fileType === "scores_numeric" && scoreColumnIndex === -1)) {
             let maxScoreFound = 0;
             let bestColIndex = -1;
@@ -592,7 +655,6 @@
             }
         }
 
-        // 3. التوجيه للدالة المناسبة (مع التراكم)
         if (fileType === "grades_text") {
             processTextGradesAccumulative(workbook);
         } else if (fileType === "scores_numeric" && scoreColumnIndex !== -1) {
@@ -621,12 +683,10 @@
                     if(!subjName) subjName = json[r][subjectColEn];
                     if(typeof subjName === 'string') {
                         subjName = subjName.trim();
-                        // إضافة المادة للقائمة العامة إذا لم تكن موجودة
                         if (!globalSubjects.includes(subjName)) {
                             globalSubjects.push(subjName);
                             globalCounts[subjName] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
                         }
-                        
                         globalCounts[subjName][grade]++;
                         studentProcessed = true;
                     }
@@ -641,7 +701,6 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
         
-        // استخراج اسم المادة
         for(let r=0; r < Math.min(json.length, 30); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
