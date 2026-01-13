@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام التحليل الشامل - V17 (العنوان الاختياري)</title>
+    <title>نظام التحليل الشامل - V18 (دمج الملفات المتعددة)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
             --accent-color: #2980b9;
             --bg-color: #f4f6f8;
             --border-color: #ddd;
-            --custom-title-bg: #fff8e1; /* لون خلفية العنوان الاختياري */
+            --custom-title-bg: #fff8e1;
             --custom-title-text: #795548;
         }
         
@@ -73,7 +73,6 @@
         }
         .input-field:focus { border-color: var(--accent-color); outline: none; }
         
-        /* أزرار التحكم */
         .main-actions {
             text-align: center;
             margin-top: 20px;
@@ -125,7 +124,6 @@
             position: relative;
         }
 
-        /* 1. الترويسة */
         .header-section {
             display: flex;
             justify-content: space-between;
@@ -150,7 +148,6 @@
             display: block;
         }
 
-        /* 2. شريط المعلومات */
         .info-bar {
             background-color: #e8f6f3;
             color: #145a32;
@@ -165,7 +162,6 @@
             font-size: 13px;
         }
 
-        /* 3. العنوان الفرعي (الاختياري) */
         .custom-title-bar {
             background-color: var(--custom-title-bg);
             color: var(--custom-title-text);
@@ -176,10 +172,9 @@
             text-align: center;
             font-weight: bold;
             font-size: 14px;
-            display: none; /* مخفي افتراضياً */
+            display: none; 
         }
 
-        /* 4. الجدول */
         .table-section { margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th, td { border: 1px solid #bbb; padding: 5px; text-align: center; }
@@ -188,7 +183,6 @@
         .col-separator { border-left: 2px solid #555 !important; }
         tr:nth-child(even) { background-color: #fafafa; }
 
-        /* 5. الرسم البياني */
         .chart-section {
             flex-grow: 1;
             border: 1px solid #eee;
@@ -207,7 +201,6 @@
             justify-content: center;
         }
 
-        /* 6. التذييل (على الشاشة) */
         .report-footer {
             margin-top: auto; 
             padding-top: 20px;
@@ -252,11 +245,7 @@
             table { font-size: 10px; }
             th, td { padding: 4px; }
 
-            .chart-section { 
-                padding: 0; 
-                border: none; 
-                margin-bottom: 60px;
-            }
+            .chart-section { padding: 0; border: none; margin-bottom: 60px; }
             .chart-container { height: 260px !important; }
 
             .report-footer {
@@ -276,8 +265,8 @@
 
 <div class="control-panel">
     <div class="control-header">
-        <h2>📊 نظام تحليل النتائج الشامل</h2>
-        <p style="color: #666; font-size: 12px;">أداة ذكية تتعرف على الأعمدة وتدعم جميع أنواع الملفات.</p>
+        <h2>📊 نظام تحليل النتائج الشامل (دمج متعدد)</h2>
+        <p style="color: #666; font-size: 12px;">يمكنك تحديد عدة ملفات معاً، وسيقوم النظام بدمجها في تقرير واحد.</p>
     </div>
 
     <div class="control-grid">
@@ -304,15 +293,15 @@
         <div class="control-group">
             <h3>الإعدادات والصف</h3>
             <input type="text" id="inp_grade" class="input-field" placeholder="الصف" oninput="updateReportDisplay()">
-            <input type="text" id="inp_section" class="input-field" placeholder="الفصل" oninput="updateReportDisplay()">
+            <input type="text" id="inp_section" class="input-field" placeholder="الفصل (أو فصول متعددة)" oninput="updateReportDisplay()">
             <label style="font-size: 11px; font-weight:bold; display:block; margin-top:5px;">الدرجة العظمى (للمواد):</label>
-            <input type="number" id="inp_max_score" class="input-field" value="100" placeholder="100" onchange="reProcessFile()">
+            <input type="number" id="inp_max_score" class="input-field" value="100" placeholder="100" onchange="reProcessFiles()">
         </div>
     </div>
 
     <div style="margin-top: 15px; padding: 15px; background: #fffde7; border: 1px solid #eee; border-radius: 8px;">
         <label style="font-weight: bold; font-size: 13px; color: #f39c12;">عنوان فرعي للتقرير (اختياري): </label>
-        <input type="text" id="inp_custom_title" class="input-field" style="width: 70%; display: inline-block; margin-right: 10px;" placeholder="مثال: تحليل اختبار الفترة الأولى / اختبار تشخيصي..." oninput="updateReportDisplay()">
+        <input type="text" id="inp_custom_title" class="input-field" style="width: 70%; display: inline-block; margin-right: 10px;" placeholder="مثال: تحليل مجمع للفصول (أ، ب، ج) / تحليل شامل لجميع المواد..." oninput="updateReportDisplay()">
     </div>
 
     <div style="margin-top: 15px; padding: 15px; background: #fdfefe; border: 1px solid #eee; border-radius: 8px;">
@@ -321,10 +310,10 @@
     </div>
 
     <div class="main-actions">
-        <input type="file" id="fileUpload" accept=".xlsx, .xls" style="display: none;" onchange="handleFile(this)">
-        <button class="btn btn-upload" onclick="document.getElementById('fileUpload').click()">📂 1. رفع ملف الإكسل</button>
+        <input type="file" id="fileUpload" accept=".xlsx, .xls" style="display: none;" multiple onchange="handleFiles(this)">
+        <button class="btn btn-upload" onclick="document.getElementById('fileUpload').click()">📂 1. رفع ملفات الإكسل (متعدد)</button>
         <br>
-        <span class="hint-text">💡 يتعرف تلقائياً على أعمدة (المجموع، رصد الدرجات، الدرجة الكلية)</span>
+        <span class="hint-text">💡 يمكنك تحديد أكثر من ملف (باستخدام Ctrl أو Shift) لدمج التحليل</span>
         <br><br>
         <button class="btn btn-print" onclick="window.print()">🖨️ 2. طباعة التقرير</button>
         <button class="btn btn-excel" onclick="exportToExcel()">📥 تصدير إكسل</button>
@@ -357,7 +346,7 @@
     <div class="info-bar">
         <div class="info-item"><span>📌 الصف الدراسي:</span> <span id="out_grade">--</span></div>
         <div class="info-item"><span>🏫 الفصل / الشعبة:</span> <span id="out_section">--</span></div>
-        <div class="info-item"><span>👥 عدد الطلاب:</span> <span id="totalStudents">0</span></div>
+        <div class="info-item"><span>👥 إجمالي الطلاب:</span> <span id="totalStudents">0</span></div>
     </div>
 
     <div id="out_custom_title_bar" class="custom-title-bar"></div>
@@ -384,7 +373,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td colspan="11" style="padding: 20px; color: #999;">الرجاء رفع ملف الإكسل...</td></tr>
+                <tr><td colspan="11" style="padding: 20px; color: #999;">الرجاء رفع الملفات...</td></tr>
             </tbody>
         </table>
     </div>
@@ -415,8 +404,8 @@
 <script>
     let globalCounts = {};
     let globalTotalStudents = 0;
-    let globalSubjects = [];
-    let currentWorkbook = null;
+    let globalSubjects = []; // Set of all subjects found across all files
+    let loadedWorkbooks = []; // Store all loaded workbooks for reprocessing
     const gradesOrder = ["ضعيف", "مقبول", "جيد", "جيد جداً", "ممتاز"];
 
     window.onload = function() {
@@ -437,7 +426,6 @@
         document.getElementById('out_grade').innerText = document.getElementById('inp_grade').value;
         document.getElementById('out_section').innerText = document.getElementById('inp_section').value;
         
-        // العنوان الاختياري
         const customTitleVal = document.getElementById('inp_custom_title').value;
         const customTitleBar = document.getElementById('out_custom_title_bar');
         
@@ -459,26 +447,69 @@
         return str.replace(/[0-9]/g, d => map[d]);
     }
 
-    function handleFile(input) {
-        const file = input.files[0];
-        if (!file) return;
+    // --- معالجة الملفات المتعددة ---
+    async function handleFiles(input) {
+        const files = input.files;
+        if (files.length === 0) return;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            currentWorkbook = workbook;
-            
-            autoFillInputs(workbook);
-            processDataHybrid(workbook); 
-            updateReportDisplay();
-        };
-        reader.readAsArrayBuffer(file);
+        // إعادة تعيين المتغيرات العامة لبدء تحليل جديد
+        globalCounts = {};
+        globalTotalStudents = 0;
+        globalSubjects = [];
+        loadedWorkbooks = [];
+
+        // قراءة كل الملفات
+        const promises = Array.from(files).map(file => readFileAsync(file));
+        const workbooks = await Promise.all(promises);
+        
+        loadedWorkbooks = workbooks; // حفظ الملفات لإعادة المعالجة
+
+        // استخراج البيانات الوصفية من أول ملف فقط
+        if (workbooks.length > 0) {
+            autoFillInputs(workbooks[0]);
+        }
+
+        // معالجة البيانات من جميع الملفات ودمجها
+        processAllWorkbooks(workbooks);
     }
 
-    function reProcessFile() {
-        if(currentWorkbook) {
-            processDataHybrid(currentWorkbook);
+    function readFileAsync(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                resolve(workbook);
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function reProcessFiles() {
+        if(loadedWorkbooks.length > 0) {
+            // إعادة تعيين العدادات فقط، البيانات الوصفية تبقى كما عدلها المستخدم
+            globalCounts = {};
+            globalTotalStudents = 0;
+            globalSubjects = [];
+            processAllWorkbooks(loadedWorkbooks);
+        }
+    }
+
+    function processAllWorkbooks(workbooks) {
+        workbooks.forEach(wb => {
+            processDataHybridAccumulative(wb);
+        });
+
+        // التحديث النهائي للعرض
+        document.getElementById('totalStudents').innerText = toArabicNumerals(globalTotalStudents);
+        updateSubjectInput(); // تحديث حقل المادة بناءً على المواد المجمعة
+        
+        if (globalTotalStudents > 0) {
+            renderCombinedTable();
+            renderChartSmart();
+        } else {
+            alert("لم يتم العثور على بيانات واضحة في الملفات المرفوعة.");
         }
     }
 
@@ -496,47 +527,36 @@
             row.forEach(cell => {
                 if (typeof cell !== 'string') return;
                 const txt = cell.trim();
-                
                 if ((txt.includes("مدرسة") || txt.includes("ابتدائية") || txt.includes("متوسطة") || txt.includes("ثانوية")) && !txt.includes("مدير")) {
-                   if (!txt.includes("الرياض") && !txt.includes("تعليم")) {
-                       foundSchool = txt;
-                   }
+                   if (!txt.includes("الرياض") && !txt.includes("تعليم")) foundSchool = txt;
                 }
-                
-                if (i >= 5 && (txt.includes("الابتدائي") || txt.includes("المتوسط") || txt.includes("الثانوي"))) {
-                    foundGrade = txt;
-                }
+                if (i >= 5 && (txt.includes("الابتدائي") || txt.includes("المتوسط") || txt.includes("الثانوي"))) foundGrade = txt;
             });
         }
         
         if (foundSchool) document.getElementById('inp_school').value = foundSchool;
         if (foundGrade) document.getElementById('inp_grade').value = foundGrade;
-        document.getElementById('inp_section').value = "1";
+        // افتراضياً نضع "فصول متعددة" إذا لم يغيره المستخدم، لكن سنبقيه فارغاً أو 1 ليعدله المستخدم
     }
 
-    function processDataHybrid(workbook) {
-        globalCounts = {};
-        globalTotalStudents = 0;
-        globalSubjects = [];
-
+    // === دالة المعالجة التراكمية (Accumulative) ===
+    function processDataHybridAccumulative(workbook) {
         let fileType = "unknown";
         let scoreColumnIndex = -1;
         
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
-        
         const scoreKeywords = ["المجموع", "رصد الدرجات", "الدرجة الكلية", "الدرجة", "Total", "Score", "Mark"];
 
+        // 1. تحديد نوع الملف
         for(let r=0; r < Math.min(json.length, 40); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let cellVal = (json[r][c] || "").toString().trim();
-                
                 if(gradesOrder.includes(cellVal)) {
                     fileType = "grades_text";
                     break;
                 }
-                
                 if(scoreKeywords.some(keyword => cellVal.includes(keyword) || cellVal === keyword)) {
                     fileType = "scores_numeric";
                     scoreColumnIndex = c;
@@ -545,10 +565,10 @@
             if(fileType === "grades_text") break;
         }
 
+        // 2. الذكاء الرقمي
         if(fileType === "unknown" || (fileType === "scores_numeric" && scoreColumnIndex === -1)) {
             let maxScoreFound = 0;
             let bestColIndex = -1;
-
             for(let c=0; c < 50; c++) { 
                 let numericCount = 0;
                 let currentMax = 0;
@@ -566,62 +586,27 @@
                     bestColIndex = c;
                 }
             }
-
             if(bestColIndex !== -1) {
                 fileType = "scores_numeric";
                 scoreColumnIndex = bestColIndex;
             }
         }
 
+        // 3. التوجيه للدالة المناسبة (مع التراكم)
         if (fileType === "grades_text") {
-            processTextGrades(workbook);
+            processTextGradesAccumulative(workbook);
         } else if (fileType === "scores_numeric" && scoreColumnIndex !== -1) {
-            processNumericScores(workbook, scoreColumnIndex);
+            processNumericScoresAccumulative(workbook, scoreColumnIndex);
         } else {
-            processTextGrades(workbook); 
-        }
-
-        document.getElementById('totalStudents').innerText = toArabicNumerals(globalTotalStudents);
-        
-        if (globalTotalStudents > 0) {
-            renderCombinedTable();
-            renderChartSmart();
-        } else {
-            alert("لم يتم العثور على بيانات واضحة.");
+            processTextGradesAccumulative(workbook); 
         }
     }
 
-    function processTextGrades(workbook) {
-        let detectedSubjects = [];
+    function processTextGradesAccumulative(workbook) {
         const gradeCol = 23; 
         const subjectColAr = 46; 
         const subjectColEn = 17; 
         
-        for(let sName of workbook.SheetNames) {
-            const sheet = workbook.Sheets[sName];
-            const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
-            if (json.length < 20) continue;
-
-            for(let r=0; r < Math.min(json.length, 100); r++) {
-                if(!json[r]) continue;
-                let grade = (json[r][gradeCol] || "").toString().trim();
-                if(gradesOrder.includes(grade)) {
-                    let subjName = json[r][subjectColAr];
-                    if(!subjName) subjName = json[r][subjectColEn];
-                    if(typeof subjName === 'string' && subjName.trim().length > 0) {
-                        let cleanName = subjName.trim();
-                        if(!detectedSubjects.includes(cleanName)) detectedSubjects.push(cleanName);
-                    }
-                }
-            }
-            if(detectedSubjects.length > 0) break;
-        }
-
-        globalSubjects = detectedSubjects.length > 0 ? detectedSubjects : ["عام"];
-        updateSubjectInput();
-
-        globalSubjects.forEach(s => globalCounts[s] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 });
-
         workbook.SheetNames.forEach(sheetName => {
             const sheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
@@ -636,10 +621,14 @@
                     if(!subjName) subjName = json[r][subjectColEn];
                     if(typeof subjName === 'string') {
                         subjName = subjName.trim();
-                        if(globalCounts[subjName]) {
-                            globalCounts[subjName][grade]++;
-                            studentProcessed = true;
+                        // إضافة المادة للقائمة العامة إذا لم تكن موجودة
+                        if (!globalSubjects.includes(subjName)) {
+                            globalSubjects.push(subjName);
+                            globalCounts[subjName] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
                         }
+                        
+                        globalCounts[subjName][grade]++;
+                        studentProcessed = true;
                     }
                 }
             }
@@ -647,25 +636,26 @@
         });
     }
 
-    function processNumericScores(workbook, scoreColIdx) {
+    function processNumericScoresAccumulative(workbook, scoreColIdx) {
         let subjectName = "المادة";
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
         
+        // استخراج اسم المادة
         for(let r=0; r < Math.min(json.length, 30); r++) {
             if(!json[r]) continue;
             for(let c=0; c < json[r].length; c++) {
                 let txt = (json[r][c] || "").toString();
-                if(txt.includes("المادة") || txt.includes("مادة")) { } 
-                if(["اللغة الإنجليزية", "الرياضيات", "لغتي", "علوم", "فقه", "توحيد"].some(s => txt.includes(s))) {
+                if(["اللغة الإنجليزية", "الرياضيات", "لغتي", "علوم", "فقه", "توحيد", "دراسات", "مهارات"].some(s => txt.includes(s))) {
                     subjectName = txt;
                 }
             }
         }
         
-        globalSubjects = [subjectName];
-        updateSubjectInput();
-        globalCounts[subjectName] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
+        if (!globalSubjects.includes(subjectName)) {
+            globalSubjects.push(subjectName);
+            globalCounts[subjectName] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
+        }
 
         let maxScoreInput = parseFloat(document.getElementById('inp_max_score').value) || 100;
 
@@ -676,7 +666,6 @@
             for(let r=0; r < json.length; r++) {
                 if(!json[r]) continue;
                 let cellVal = json[r][scoreColIdx];
-                
                 if(typeof cellVal === 'string' && isNaN(parseFloat(cellVal))) continue;
 
                 let score = parseFloat(cellVal);
@@ -702,8 +691,8 @@
         const subjectInput = document.getElementById('inp_subject');
         if (globalSubjects.length === 1) {
             subjectInput.value = globalSubjects[0];
-        } else {
-            subjectInput.value = "عام / شامل";
+        } else if (globalSubjects.length > 1) {
+            subjectInput.value = "شامل (مواد متعددة / فصول مجمعة)";
         }
     }
 
@@ -787,7 +776,7 @@
                     },
                     plugins: {
                         legend: { position: 'top', rtl: true, labels: { boxWidth: 10, font: { size: 10 } } },
-                        title: { display: true, text: 'تحليل مقارن لجميع المواد' }
+                        title: { display: true, text: 'تحليل مجمع للمواد' }
                     }
                 }
             });
