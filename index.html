@@ -755,7 +755,7 @@
 
         // 2. Numeric Scores
         if(fileType === "unknown") {
-            const scoreKeywords = ["المجموع", "الدرجة الكلية", "Total", "Score"];
+            const scoreKeywords = ["المجموع", "الدرجة الكلية", "رصد الدرجات" ,"Total", "Score"];
             for(let r=0; r<Math.min(json.length, 50); r++) {
                 if(!json[r]) continue;
                 json[r].forEach((cell, idx) => {
