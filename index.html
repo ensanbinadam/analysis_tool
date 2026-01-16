@@ -345,7 +345,7 @@
             table { font-size: 10px; }
             th, td { padding: 4px; }
             
-            /* Fix 3: Absolute Footer */
+        /* Fix 3: Absolute Footer */
             .report-footer { 
                 position: absolute;
                 bottom: 10mm;
@@ -354,6 +354,20 @@
                 border-top: 1px solid #aaa;
                 padding-top: 10px;
                 margin-top: 0;
+            }
+
+            /* Fix 5: Prevent Chart Overlap with Caption */
+            .chart-container canvas {
+                max-height: 100% !important; /* Force chart to fit in 210px container */
+                width: auto !important;
+                margin: 0 auto;
+            }
+            #singleSubjectNote {
+                margin-top: 15px !important;
+                position: relative !important;
+                z-index: 10;
+                display: block; /* Will respect JS display property, but this ensures block model if visible */
+                background: white !important; /* Ensure text is visible if overlap persists */ 
             }
         }
     </style>
