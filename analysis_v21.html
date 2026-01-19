@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="نظام تحليل النتائج الشامل - أداة متقدمة لتحليل درجات الطلاب واستخراج التقارير البيانية والإحصائية بدقة عالية.">
     <meta name="keywords" content="تحليل نتائج, نظام نور, إحصاءات تعليمية, رسوم بيانية, تقارير طلاب">
-    <meta property="og:title" content="نظام التحليل الشامل V20">
-    <meta property="og:description" content="أداة احترافية لتحليل النتائج الدراسية مع دعم تعدد الملفات والذكاء الرقمي.">
+    <meta property="og:title" content="نظام التحليل الإحصائي الشامل V21">
+        <meta property="og:description" content="أداة احترافية لتحليل النتائج الدراسية مع دعم تعدد الملفات والذكاء الرقمي.">
     <meta property="og:type" content="website">
     
     <!-- Favicon: Simple Chart Icon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
 
-    <title>نظام التحليل الشامل - V20.6 (Premium)</title>
+    <title>نظام التحليل الإحصائي الشامل - V21 (Premium)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -345,7 +345,7 @@
             table { font-size: 10px; }
             th, td { padding: 4px; }
             
-            /* Fix 3: Absolute Footer */
+        /* Fix 3: Absolute Footer */
             .report-footer { 
                 position: absolute;
                 bottom: 10mm;
@@ -355,6 +355,43 @@
                 padding-top: 10px;
                 margin-top: 0;
             }
+
+            /* Fix 5: Prevent Chart Overlap with Caption */
+            .chart-container canvas {
+                max-height: 100% !important; /* Force chart to fit in 210px container */
+                width: auto !important;
+                margin: 0 auto;
+            }
+            #singleSubjectNote {
+                margin-top: 15px !important;
+                position: relative !important;
+                z-index: 10;
+                display: block; /* Will respect JS display property, but this ensures block model if visible */
+                background: white !important; /* Ensure text is visible if overlap persists */ 
+            }
+        }
+    </style>
+    <!-- Add new styles for stats table specifically if needed, likely handled by generic table css, but lets ensure print layout is tight -->
+    <style>
+        #statsTable th { background-color: #334155; color: white; }
+        @media print {
+            /* Fix Height to ensure single page with new table */
+            .page-container {
+               padding: 5mm 10mm; /* Reduce vertical padding */
+               height: 290mm; /* Slight adjustment */
+            }
+            .header-section { margin-bottom: 5px; }
+            .info-bar { margin-bottom: 5px; padding: 2px; }
+            .table-section { margin-bottom: 10px !important; }
+            
+            /* Make chart smaller to accommodate new table, but maximized as per user request */
+            .chart-container { height: 230px !important; }
+            
+            /* Compact tables */
+            th, td { padding: 2px 4px !important; font-size: 9px !important; }
+            
+            /* Footer pos adjustment */
+            .report-footer { bottom: 5mm; }
         }
     </style>
 </head>
@@ -363,7 +400,7 @@
 <div class="control-panel">
     <div class="panel-header">
         <div class="panel-title">
-            <h2><span>📊</span> نظام التحليل الشامل <span style="font-size: 14px; background: var(--warning-color); color: #fff; padding: 2px 8px; border-radius: 20px; margin-right: 10px;">V20.6</span></h2>
+            <h2><span>📊</span> نظام التحليل الإحصائي الشامل <span style="font-size: 14px; background: var(--warning-color); color: #fff; padding: 2px 8px; border-radius: 20px; margin-right: 10px;">V21</span></h2>
             <p>النسخة المطورّة: (Premium+)</p>
         </div>
         <div class="settings-actions">
@@ -493,6 +530,29 @@
         </table>
     </div>
 
+    <!-- New: Statistical Analysis Table -->
+    <div class="table-section" id="statsSection" style="margin-top: 10px;">
+        <div style="text-align: right; margin-bottom: 5px; font-weight: bold; color: var(--secondary-color); font-size: 13px;">📈 المؤشرات الإحصائية:</div>
+        <table id="statsTable">
+            <thead>
+                <tr class="main-header">
+                    <th style="width: 20%;">المادة</th>
+                    <th>المتوسط (Mean)</th>
+                    <th>الوسيط (Median)</th>
+                    <th>الانحراف (Std Dev)</th>
+                    <th>نسبة الاجتياز</th>
+                    <th>أعلى درجة</th>
+                    <th>أقل درجة</th>
+                    <th>نسبة القوة (>جيد)</th>
+                    <th>نسبة الضعف/الاحتياج</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="9" style="padding: 10px; color: #94a3b8;">--</td></tr>
+            </tbody>
+        </table>
+    </div>
+
     <div class="chart-section">
         <div class="chart-container" id="chartWrapper">
             <canvas id="gradesChart"></canvas>
@@ -519,6 +579,7 @@
     // === Core Logic Data ===
     let globalCounts = {};
     let subjectTotals = {}; 
+    let subjectScores = {}; // New: Store raw scores for statistics
     let globalTotalStudents = 0; 
     let globalSubjects = [];
     let loadedWorkbooks = [];
@@ -603,7 +664,7 @@
         document.getElementById('out_year').innerText = valueOf('inp_year');
         document.getElementById('out_term').innerText = valueOf('inp_term');
         
-        // Fix (V20.6): Subject Sync Logic - Real-time updates
+        // Fix (V21): Subject Sync Logic - Real-time updates
         const subjInput = valueOf('inp_subject');
         document.getElementById('out_subject').innerText = subjInput; 
 
@@ -668,6 +729,7 @@
     function resetData() {
         globalCounts = {};
         subjectTotals = {};
+        subjectScores = {}; // New
         globalTotalStudents = 0;
         globalSubjects = [];
     }
@@ -755,7 +817,7 @@
 
         // 2. Numeric Scores
         if(fileType === "unknown") {
-            const scoreKeywords = ["المجموع", "الدرجة الكلية", "Total", "Score"];
+            const scoreKeywords = ["المجموع", "الدرجة الكلية", "رصد الدرجات" ,"Total", "Score"];
             for(let r=0; r<Math.min(json.length, 50); r++) {
                 if(!json[r]) continue;
                 json[r].forEach((cell, idx) => {
@@ -805,6 +867,7 @@
             globalSubjects.push(subject);
             globalCounts[subject] = { "ضعيف": 0, "مقبول": 0, "جيد": 0, "جيد جداً": 0, "ممتاز": 0 };
             subjectTotals[subject] = 0;
+            subjectScores[subject] = []; // New: Initialize score array
         }
         return subject; // Fix: RETURN the key
     }
@@ -857,6 +920,9 @@
                    let g = getGrade(val, maxScore);
                    globalCounts[safeKey][g]++;
                    subjectTotals[safeKey]++;
+                   
+                   // Store raw score for statistics
+                   if(subjectScores[safeKey]) subjectScores[safeKey].push(val);
                }
             });
         });
@@ -882,7 +948,7 @@
         globalSubjects.forEach(subject => {
             const totalForSub = subjectTotals[subject] || 1; 
             
-            // Fix V20.6: Display Override
+            // Fix V21: Display Override
             let displayName = subject;
             if(globalSubjects.length === 1 && manualSubject && manualSubject.trim().length > 0) {
                 displayName = manualSubject;
@@ -906,6 +972,87 @@
             tr += `</tr>`;
             tbody.innerHTML += tr;
         });
+
+        renderStatsTable(); // New: Trigger stats table render
+    }
+
+    // === Statistical Analysis ===
+    function renderStatsTable() {
+        const tbody = document.querySelector('#statsTable tbody');
+        if(!tbody) return;
+        tbody.innerHTML = "";
+
+        const manualSubject = valueOf('inp_subject');
+
+        globalSubjects.forEach(subject => {
+            let displayName = subject;
+            if(globalSubjects.length === 1 && manualSubject && manualSubject.trim().length > 0) {
+                displayName = manualSubject;
+            }
+
+            const scores = subjectScores[subject] || [];
+            const hasScores = scores.length > 0;
+            const total = subjectTotals[subject] || 0;
+
+            // Metrics
+            const mean = hasScores ? calcMean(scores) : "-";
+            const median = hasScores ? calcMedian(scores) : "-";
+            const stdDev = hasScores ? calcStdDev(scores) : "-";
+            const max = hasScores ? Math.max(...scores) : "-";
+            const min = hasScores ? Math.min(...scores) : "-";
+            
+            // Rates (Derived from Counts)
+            const counts = globalCounts[subject];
+            // Pass: Excellent + Very Good + Good + Acceptable
+            // Fail: Weak
+            // Note: gradesOrder = ["ضعيف", "مقبول", "جيد", "جيد جداً", "ممتاز"]
+            // 0:Weak, 1:Acceptable, 2:Good, 3:Very Good, 4:Excellent
+            
+            const passCount = (counts["ممتاز"]||0) + (counts["جيد جداً"]||0) + (counts["جيد"]||0) + (counts["مقبول"]||0);
+            const passRate = total > 0 ? ((passCount / total) * 100).toFixed(1) + "%" : "0%";
+
+            // Strength: Excellent + Very Good
+            const strengthCount = (counts["ممتاز"]||0) + (counts["جيد جداً"]||0);
+            const strengthRate = total > 0 ? ((strengthCount / total) * 100).toFixed(1) + "%" : "0%";
+
+            // Weakness: Weak
+            const weaknessCount = (counts["ضعيف"]||0);
+            const weaknessRate = total > 0 ? ((weaknessCount / total) * 100).toFixed(1) + "%" : "0%";
+
+            let tr = `<tr>`;
+            tr += `<td style="font-weight:bold; text-align:right; color:var(--primary-color);">${displayName}</td>`;
+            tr += `<td>${toArabicNumerals(mean)}</td>`;
+            tr += `<td>${toArabicNumerals(median)}</td>`;
+            tr += `<td>${toArabicNumerals(stdDev)}</td>`;
+            tr += `<td>${toArabicNumerals(passRate)}</td>`; // Pass Rate
+            tr += `<td>${toArabicNumerals(max)}</td>`;
+            tr += `<td>${toArabicNumerals(min)}</td>`;
+            tr += `<td style="color:var(--success-color); font-weight:bold;">${toArabicNumerals(strengthRate)}</td>`;
+            tr += `<td style="color:var(--danger-color); font-weight:bold;">${toArabicNumerals(weaknessRate)}</td>`;
+            tr += `</tr>`;
+            tbody.innerHTML += tr;
+        });
+    }
+
+    function calcMean(scores) {
+        if(!scores || scores.length === 0) return 0;
+        const sum = scores.reduce((a, b) => a + b, 0);
+        return (sum / scores.length).toFixed(1);
+    }
+
+    function calcMedian(scores) {
+        if(!scores || scores.length === 0) return 0;
+        const sorted = [...scores].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return (sorted.length % 2 !== 0) ? sorted[mid] : ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1);
+    }
+
+    function calcStdDev(scores) {
+        if(!scores || scores.length === 0) return 0;
+        const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const squareDiffs = scores.map(v => Math.pow(v - mean, 2));
+        const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / scores.length;
+        return Math.sqrt(avgSquareDiff).toFixed(2);
     }
 
     function renderChart() {
@@ -918,7 +1065,7 @@
             document.getElementById('chartWrapper').style.margin = "0 auto";
             document.getElementById('singleSubjectNote').style.display = 'block';
             
-            // Fix V20.6: Chart Title Override
+            // Fix V21: Chart Title Override
             const manualSubject = valueOf('inp_subject');
             let subj = globalSubjects[0];
             let displayTitle = subj;
@@ -950,7 +1097,7 @@
             document.getElementById('chartWrapper').style.maxWidth = "100%";
             document.getElementById('singleSubjectNote').style.display = 'none';
             
-            // Fix V20.8: Use slice() to avoid mutating global gradesOrder
+            // Fix V21: Use slice() to avoid mutating global gradesOrder
             const datasets = gradesOrder.slice().reverse().map(g => ({
                 label: g,
                 data: globalSubjects.map(s => globalCounts[s][g]),
